@@ -1,0 +1,28 @@
+# Tech Relay Flint 4 login banner, MOTD, and terminal title.
+
+if [[ -o interactive ]]; then
+    if [[ -z "${TECHRELAY_MOTD_SHOWN:-}" ]]; then
+        export TECHRELAY_MOTD_SHOWN=1
+
+        [[ -r /etc/banner ]] &&
+            cat /etc/banner
+
+        [[ -x /usr/sbin/techrelay-top-network ]] &&
+            /usr/sbin/techrelay-top-network
+
+        [[ -x /usr/sbin/techrelay-motd ]] &&
+            /usr/sbin/techrelay-motd
+    fi
+
+    DISABLE_AUTO_TITLE="true"
+
+    autoload -Uz add-zsh-hook
+
+    techrelay_update_tab_title()
+    {
+        print -Pn '\e]0;%m: %~\a'
+    }
+
+    add-zsh-hook precmd techrelay_update_tab_title
+    techrelay_update_tab_title
+fi
