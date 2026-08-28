@@ -1,6 +1,8 @@
-# Flint 4 Banner and MOTD
+# Flint 4 Banner and MOTD — OpenWrt 25
 
-Complete login banner and dynamic MOTD setup for a GL.iNet Flint 4 (`GL-BE14000`) running OpenWrt and zsh/Oh My Zsh.
+Complete login banner and dynamic MOTD setup for a GL.iNet Flint 4 (`GL-BE14000`) running an OpenWrt 25 APK-based build with zsh/Oh My Zsh.
+
+This `op25` branch is the OpenWrt 25 / `apk` version. The `main` branch remains the legacy `opkg` version.
 
 The login display contains:
 
@@ -16,14 +18,18 @@ The login display contains:
 SSH into the Flint 4 as root and run:
 
 ```sh
-opkg update
-opkg install ca-certificates ca-bundle curl zsh git-http
+apk update
+apk add ca-certificates ca-bundle curl zsh git git-http
 
 rm -rf /tmp/Flint4-BannerMOTD
-git clone https://github.com/zippyy/Flint4-BannerMOTD.git /tmp/Flint4-BannerMOTD
+git clone --branch op25 --single-branch \
+    https://github.com/zippyy/Flint4-BannerMOTD.git \
+    /tmp/Flint4-BannerMOTD
 chmod +x /tmp/Flint4-BannerMOTD/install.sh
 /tmp/Flint4-BannerMOTD/install.sh
 ```
+
+The installer verifies that `apk` is available and uses it to install/verify the required packages. It does not call `opkg`.
 
 Then disconnect and reconnect:
 
@@ -42,7 +48,11 @@ ssh -t root@192.168.80.1 -p 42
 | `files/root/.techrelay-zsh` | `/root/.techrelay-zsh` |
 | `files/root/.zshrc` | `/root/.zshrc` |
 
-The installer backs up every existing destination before replacing it.
+The installer backs up every existing destination before replacing it under:
+
+```text
+/root/Flint4-BannerMOTD-backup-YYYYMMDD-HHMMSS/
+```
 
 ## Manual tests
 
