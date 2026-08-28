@@ -13,14 +13,13 @@ The login display contains:
 5. Network Verification
 6. Oh My Zsh `pygmalion` prompt and terminal-title handling
 
+The OpenWrt 25 OPKG-to-APK login cheatsheet is backed up and suppressed by the installer so it does not interrupt the custom login display.
+
 ## Install
 
 SSH into the Flint 4 as root and run:
 
 ```sh
-apk update
-apk add ca-certificates ca-bundle curl zsh git git-http
-
 rm -rf /tmp/Flint4-BannerMOTD
 git clone --branch op25 --single-branch \
     https://github.com/zippyy/Flint4-BannerMOTD.git \
@@ -29,7 +28,7 @@ chmod +x /tmp/Flint4-BannerMOTD/install.sh
 /tmp/Flint4-BannerMOTD/install.sh
 ```
 
-The installer verifies that `apk` is available and uses it to install/verify the required packages. It does not call `opkg`.
+The installer verifies that `apk` is available, runs `apk update`, and installs/verifies `ca-certificates`, `ca-bundle`, `curl`, `zsh`, `git`, and `git-http`. It does not call `opkg`.
 
 Then disconnect and reconnect:
 
@@ -40,15 +39,18 @@ ssh -t root@192.168.80.1 -p 42
 
 ## Installed files
 
-| Repository file | Router destination |
+| Repository/runtime component | Router destination |
 |---|---|
 | `files/etc/banner` | `/etc/banner` |
 | `files/usr/sbin/techrelay-top-network` | `/usr/sbin/techrelay-top-network` |
-| `files/usr/sbin/techrelay-motd` | `/usr/sbin/techrelay-motd` |
+| MOTD wrapper | `/usr/sbin/techrelay-motd` |
+| `files/usr/sbin/techrelay-motd` status body | `/usr/sbin/techrelay-motd-body` |
 | `files/root/.techrelay-zsh` | `/root/.techrelay-zsh` |
 | `files/root/.zshrc` | `/root/.zshrc` |
 
-The installer backs up every existing destination before replacing it under:
+On OpenWrt 25, `/usr/sbin/techrelay-motd` is a wrapper that always runs the side-by-side overlay IP row immediately before the MOTD status body. This avoids login-order differences between OpenWrt 25 and older builds.
+
+The installer backs up existing destinations under:
 
 ```text
 /root/Flint4-BannerMOTD-backup-YYYYMMDD-HHMMSS/
@@ -76,5 +78,6 @@ The IP row and verification section discover addresses dynamically:
 - ZeroTier: first interface beginning with `zt`
 - AstroWarp: `mptun0`
 - LAN/WAN: OpenWrt `ubus` interface status
+- DNS verification: lookup through the local resolver at `127.0.0.1`
 
 Missing overlay interfaces display `No IP` in the top row and `Offline` in Network Verification.
