@@ -7,9 +7,6 @@ if [[ -o interactive ]]; then
         [[ -r /etc/banner ]] &&
             cat /etc/banner
 
-        [[ -x /usr/sbin/techrelay-top-network ]] &&
-            /usr/sbin/techrelay-top-network
-
         [[ -x /usr/sbin/techrelay-motd ]] &&
             /usr/sbin/techrelay-motd
     fi
