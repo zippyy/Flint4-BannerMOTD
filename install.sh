@@ -28,6 +28,43 @@ install_file()
     chmod "$mode" "$destination_path"
 }
 
+verify_zshrc()
+{
+    expected="$SCRIPT_DIR/files/root/.zshrc"
+    installed="/root/.zshrc"
+
+    if [ ! -r "$installed" ]; then
+        echo "ERROR: $installed is missing or unreadable after installation."
+        exit 1
+    fi
+
+    if command -v cmp >/dev/null 2>&1; then
+        if ! cmp -s "$expected" "$installed"; then
+            echo "ERROR: $installed does not exactly match the Tech Relay configuration."
+            echo "The file may have been replaced by a stock Oh My Zsh configuration."
+            echo "Expected theme: pygmalion"
+            echo "Installed theme: $(grep '^ZSH_THEME=' "$installed" 2>/dev/null || printf 'not found')"
+            exit 1
+        fi
+    else
+        if [ "$(cat "$expected")" != "$(cat "$installed")" ]; then
+            echo "ERROR: $installed does not match the Tech Relay configuration."
+            echo "The file may have been replaced by a stock Oh My Zsh configuration."
+            exit 1
+        fi
+    fi
+
+    if ! grep -qx 'ZSH_THEME="pygmalion"' "$installed"; then
+        echo "ERROR: pygmalion is not configured as the Oh My Zsh theme in $installed."
+        exit 1
+    fi
+
+    if ! grep -q '/root/.techrelay-zsh' "$installed"; then
+        echo "ERROR: the Tech Relay shell hook is missing from $installed."
+        exit 1
+    fi
+}
+
 echo "Installing Flint 4 Tech Relay banner and MOTD for OpenWrt 25..."
 echo "Backup directory: $BACKUP_DIR"
 mkdir -p "$BACKUP_DIR"
@@ -80,6 +117,7 @@ chmod 755 /usr/sbin/techrelay-motd
 
 install_file "files/root/.techrelay-zsh" "/root/.techrelay-zsh" 644
 install_file "files/root/.zshrc" "/root/.zshrc" 644
+verify_zshrc
 
 # Suppress OpenWrt 25's OPKG-to-APK login cheatsheet so the custom MOTD stays clean.
 if [ -f /etc/profile.d/apk-cheatsheet.sh ]; then
@@ -113,6 +151,10 @@ cat /tmp/passwd.flint4-banner >/etc/passwd
 rm -f /tmp/passwd.flint4-banner
 chmod 644 /etc/passwd
 
+# Final verification after all installer changes. Do not print success if the
+# Tech Relay zsh configuration was replaced at any point during installation.
+verify_zshrc
+
 cat >"$BACKUP_DIR/RESTORE.txt" <<EOF
 Restore previous files where backups exist:
 
@@ -137,6 +179,7 @@ echo "  /root/.zshrc"
 echo
 echo "Package manager: apk"
 echo "Root login shell: $ZSH_BIN"
+echo "ZSH config: verified (pygmalion + Tech Relay hook)"
 echo "Backup: $BACKUP_DIR"
 echo
 echo "Disconnect and reconnect to see the complete login display."
