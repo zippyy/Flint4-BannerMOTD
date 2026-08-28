@@ -30,6 +30,8 @@ chmod +x /tmp/Flint4-BannerMOTD/install.sh
 
 The installer verifies that `apk` is available, runs `apk update`, and installs/verifies `ca-certificates`, `ca-bundle`, `curl`, `zsh`, `git`, and `git-http`. It does not call `opkg`.
 
+It also verifies `/root/.zshrc` twice: once immediately after installation and again before reporting success. The installed file must exactly match the repository copy, contain `ZSH_THEME="pygmalion"`, and source `/root/.techrelay-zsh`. If a stock Oh My Zsh `.zshrc` replaces it, the installer exits with an error instead of reporting a successful install.
+
 Then disconnect and reconnect:
 
 ```sh
@@ -62,6 +64,15 @@ The installer backs up existing destinations under:
 cat /etc/banner
 /usr/sbin/techrelay-top-network
 /usr/sbin/techrelay-motd
+grep -E 'ZSH_THEME|techrelay' /root/.zshrc
+```
+
+Expected zsh markers:
+
+```text
+ZSH_THEME="pygmalion"
+[[ -r /root/.techrelay-zsh ]] &&
+    source /root/.techrelay-zsh
 ```
 
 Restart the login shell:
