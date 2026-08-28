@@ -28,15 +28,22 @@ install_file()
     chmod "$mode" "$destination_path"
 }
 
-echo "Installing Flint 4 Tech Relay banner and MOTD..."
+echo "Installing Flint 4 Tech Relay banner and MOTD for OpenWrt 25..."
 
 echo "Backup directory: $BACKUP_DIR"
 mkdir -p "$BACKUP_DIR"
 
-if ! command -v zsh >/dev/null 2>&1; then
-    opkg update
-    opkg install ca-certificates ca-bundle curl zsh git-http
+if ! command -v apk >/dev/null 2>&1; then
+    echo "ERROR: apk package manager was not found."
+    echo "This op25 branch is intended for OpenWrt 25 APK-based builds."
+    exit 1
 fi
+
+# Install/verify the dependencies used by the login environment and installer.
+# apk add is idempotent, so this is safe when packages are already installed.
+echo "Installing required packages with apk..."
+apk update
+apk add ca-certificates ca-bundle curl zsh git git-http
 
 ZSH_BIN="$(command -v zsh || true)"
 
@@ -45,12 +52,12 @@ if [ -z "$ZSH_BIN" ] || [ ! -x "$ZSH_BIN" ]; then
     exit 1
 fi
 
-if [ ! -d /root/.oh-my-zsh ]; then
-    if ! command -v git >/dev/null 2>&1; then
-        opkg update
-        opkg install git-http ca-certificates ca-bundle
-    fi
+if ! command -v git >/dev/null 2>&1; then
+    echo "ERROR: git is not installed."
+    exit 1
+fi
 
+if [ ! -d /root/.oh-my-zsh ]; then
     git clone --depth=1 \
         https://github.com/ohmyzsh/ohmyzsh.git \
         /root/.oh-my-zsh
@@ -107,6 +114,7 @@ echo "  /usr/sbin/techrelay-motd"
 echo "  /root/.techrelay-zsh"
 echo "  /root/.zshrc"
 echo
+echo "Package manager: apk"
 echo "Root login shell: $ZSH_BIN"
 echo "Backup: $BACKUP_DIR"
 echo
