@@ -11,18 +11,36 @@ The login display contains:
 5. Network Verification
 6. Oh My Zsh `pygmalion` prompt and terminal-title handling
 
+## Package-manager support
+
+The installer automatically detects the package manager:
+
+- OpenWrt 25+ / current GL.iNet builds: `apk`
+- Older OpenWrt / GL.iNet builds: `opkg`
+
+If required packages are missing, the installer uses the detected package manager to install zsh, Git HTTP support, curl, and CA certificates.
+
 ## Install
 
-SSH into the Flint 4 as root and run:
+If `git` is already available, SSH into the Flint 4 as root and run:
 
 ```sh
-opkg update
-opkg install ca-certificates ca-bundle curl zsh git-http
-
 rm -rf /tmp/Flint4-BannerMOTD
 git clone https://github.com/zippyy/Flint4-BannerMOTD.git /tmp/Flint4-BannerMOTD
 chmod +x /tmp/Flint4-BannerMOTD/install.sh
 /tmp/Flint4-BannerMOTD/install.sh
+```
+
+If a firmware upgrade also removed `git`, bootstrap it first with the package manager present on the router:
+
+```sh
+if command -v apk >/dev/null 2>&1; then
+    apk update
+    apk add ca-certificates ca-bundle curl zsh git-http
+else
+    opkg update
+    opkg install ca-certificates ca-bundle curl zsh git-http
+fi
 ```
 
 Then disconnect and reconnect:
@@ -31,6 +49,14 @@ Then disconnect and reconnect:
 exit
 ssh -t root@192.168.80.1 -p 42
 ```
+
+## Firmware-upgrade SSH safety
+
+The installer adds an idempotent recovery guard to `/etc/rc.local` before it changes root's login shell to zsh.
+
+Firmware upgrades can preserve `/etc/passwd` while removing user-installed packages. If root is still configured to use zsh but that binary no longer exists, the recovery guard automatically changes root's login shell to `/bin/ash` on boot. This prevents the router from becoming inaccessible over SSH simply because zsh was removed.
+
+After logging in with ash, restore the packages and rerun this installer. The installer will set root back to the detected zsh binary only after confirming that zsh exists and is executable.
 
 ## Installed files
 
@@ -42,7 +68,7 @@ ssh -t root@192.168.80.1 -p 42
 | `files/root/.techrelay-zsh` | `/root/.techrelay-zsh` |
 | `files/root/.zshrc` | `/root/.zshrc` |
 
-The installer backs up every existing destination before replacing it.
+The installer backs up every existing destination before replacing it. It also backs up `/etc/passwd` and `/etc/rc.local` when modifying them.
 
 ## Manual tests
 
