@@ -79,17 +79,28 @@ EOF_RC_HEADER
         chmod 755 "$rc_local"
     fi
 
-    if grep -qF "$SHELL_FALLBACK_BEGIN" "$rc_local" 2>/dev/null; then
-        return 0
-    fi
-
     backup_file "$rc_local"
 
-    # Keep all existing rc.local commands, remove the terminal exit 0, add the
-    # recovery guard, then restore exit 0 at the end. The guard runs on every
-    # boot and only acts when root's configured shell no longer exists.
+    # Keep all existing rc.local commands, remove any older copy of our guard
+    # (including the original /usr/bin/zsh-specific recovery block), remove the
+    # terminal exit 0, add the current guard, then restore exit 0 at the end.
+    # This makes rerunning the installer both idempotent and self-updating.
     tmp_rc="/tmp/rc.local.flint4-banner.$$"
-    awk '
+    awk -v begin="$SHELL_FALLBACK_BEGIN" -v end="$SHELL_FALLBACK_END" '
+        $0 == begin { in_current = 1; next }
+        in_current && $0 == end { in_current = 0; next }
+        in_current { next }
+
+        /^# Recover from missing zsh after firmware upgrade[[:space:]]*$/ {
+            in_legacy = 1
+            next
+        }
+        in_legacy && /^[[:space:]]*fi[[:space:]]*$/ {
+            in_legacy = 0
+            next
+        }
+        in_legacy { next }
+
         /^[[:space:]]*exit[[:space:]]+0[[:space:]]*$/ { next }
         { print }
     ' "$rc_local" >"$tmp_rc"
