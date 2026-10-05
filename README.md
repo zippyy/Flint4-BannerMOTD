@@ -20,10 +20,32 @@ The OpenWrt 25 OPKG-to-APK login cheatsheet is backed up and suppressed by the i
 SSH into the Flint 4 as root and run:
 
 ```sh
+apk update
+apk add ca-certificates ca-bundle curl zsh git git-http
+
 rm -rf /tmp/Flint4-BannerMOTD
 git clone --branch op25 --single-branch \
     https://github.com/zippyy/Flint4-BannerMOTD.git \
     /tmp/Flint4-BannerMOTD
+chmod +x /tmp/Flint4-BannerMOTD/install.sh
+/tmp/Flint4-BannerMOTD/install.sh
+```
+
+`git-http` has to be installed **before** cloning. OpenWrt's `apk` feed splits Git into `git` and `git-http`, so `apk add git` alone leaves the HTTPS remote helper missing and the clone fails with:
+
+```text
+git: 'remote-https' is not a git command. See 'git --help'.
+fatal: remote helper 'https' aborted session
+```
+
+The installer itself installs `git-http`, but it cannot be run until the repository has been cloned, so the bootstrap step above is required on a fresh or freshly-upgraded router.
+
+If Git cannot be installed at all, fetch the branch as a tarball instead:
+
+```sh
+mkdir -p /tmp/Flint4-BannerMOTD
+curl -fsSL https://github.com/zippyy/Flint4-BannerMOTD/archive/refs/heads/op25.tar.gz |
+    tar -xz -C /tmp/Flint4-BannerMOTD --strip-components=1
 chmod +x /tmp/Flint4-BannerMOTD/install.sh
 /tmp/Flint4-BannerMOTD/install.sh
 ```
